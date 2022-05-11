@@ -5,67 +5,66 @@ from datetime import datetime
 
 file_name = 'notes.json'
 
-@click.command()
-@click.option('--count', default=1, help='Number of greetings.')
-@click.option('--name', prompt='Your name', help='The person to greet.')
-def hello(count, name):
-    """Simple program that greets NAME for a total of COUNT times."""
-    for x in range(count):
-        click.echo(f"Hello {name}!")
-
 
 @click.group()
 def cli():
     pass
 
 
-@cli.command()
-def get_date():
-    click.echo(datetime.now())
+@cli.group()
+def note():
+    pass
 
 
-@cli.command()
-@click.option('--name', prompt='Note name', help='Name of note')
-@click.option('--note', prompt='Note', help='Note text')
-@click.option('--reminder', prompt='reminder_day', help='date')
-def create_note(name, note):
-    global file_name
-    data = {}
-    if path.exists(file_name):
-        with open(file_name, 'r') as file_json:
-            data = json.load(file_json)
-
-    data[name] = {
-        "note": note,
-        "reminder_date": None
-    }
-
-    with open(file_name, 'w') as file_json:
-        json.dump(data, file_json)
+@cli.group()
+def calendar():
+    pass
 
 
-@cli.command()
-@click.option('--name', prompt='Note name', help='Name of note')
-@click.option('--reminder', prompt='reminder_day', help='date')
-@click.option('--note', prompt='Note', help='Note text')
-def reminder_data(name, reminder, note):
+@note.command()
+@click.option("-n", '--name', prompt='Note name', help='Name of note')
+@click.option("-nt", '--note', prompt='Note', help='Note text')
+@click.option("-r", '--reminder', prompt='reminder_day', help='date')
+def create(name, note, reminder):
     global file_name
     data1 = {}
     if path.exists(file_name):
         with open(file_name, 'r') as file_json:
             data1 = json.load(file_json)
-    data1[name] = {
-        "note": note,
-        "reminder_date": reminder
 
+    date, time = reminder.split(" ")
+    date = date.split(".")
+    time = time.split(":")
+
+    data1[name] = {
+        "name": name,
+        "note": note,
+        "reminder_date": datetime(int(date[0]), int(date[1]), int(date[2]), int(time[0]), int(time[1])).timestamp()
     }
     with open(file_name, 'w') as file_json:
         json.dump(data1, file_json)
 
 
-@cli.command()
+@note.command()
 @click.argument("name")
-def get_note(name):
+def get(name):
+    global file_name
+    data = {}
+    if not path.exists(file_name):
+        click.echo(f"{file_name} not exists", err=True)
+        return
+    data[name] = {
+        "name": "task"
+    }
+
+    with open(file_name, 'r') as file_json:
+        data = json.load(file_json)
+
+    print(data[name]["note"], "\n", data[name]["reminder_date"])
+
+
+@calendar.command()
+def today():
     global file_name
     data = {}
     if not path.exists(file_name):
@@ -73,9 +72,18 @@ def get_note(name):
         return
 
     with open(file_name, 'r') as file_json:
-         data = json.load(file_json)
+        data = json.load(file_json)
 
-    print(data[name])
+    today_date = datetime.today()
+
+    notes = []
+    for item in data.values():
+        reminder = datetime.fromtimestamp(item["reminder_date"])
+        if today_date.day == reminder.day and today_date.month == reminder.month and today_date.year == reminder.year:
+            notes.append(item)
+
+    print(notes)
+
 
 if __name__ == '__main__':
     cli()
