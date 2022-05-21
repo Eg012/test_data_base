@@ -1,9 +1,11 @@
 import json
+import time
 from datetime import datetime
 from os import path
 import click
 import pandas as pd
 import numpy as np
+import subprocess
 
 file_name = 'notes.json'
 
@@ -50,6 +52,12 @@ def set_data(data):
         json.dump(data, file_json)
 
 
+def notify(name, note):
+    subprocess.run(
+        ["notify-send", "-u", "normal", "-t", "3000", name, note],
+        check=True)
+
+
 @note.command()
 @click.option("-n", '--name', prompt='Note name', help='Name of note')
 @click.option("-nt", '--note', prompt='Note', help='Note text')
@@ -86,11 +94,13 @@ def create(name, note, reminder):
 def list():
     """output of all notes"""
     data = get_data()
-    head = ["day", "time", "note"]
+    head = ["day", "year", "month", "time", "note"]
     c = []
     for note_data in data.values():
         c.append([
-            datetime.fromtimestamp(note_data["reminder_date"]).strftime("%d %B %Y"),
+            datetime.fromtimestamp(note_data["reminder_date"]).strftime("%d"),
+            datetime.fromtimestamp(note_data["reminder_date"]).strftime("%Y"),
+            datetime.fromtimestamp(note_data["reminder_date"]).strftime("%B"),
             datetime.fromtimestamp(note_data["reminder_date"]).strftime("%H:%M"),
             note_data["note"]
         ])
@@ -104,6 +114,22 @@ def get(name):
     """search for a note by its name"""
     data = get_data()
     print(data[name]["note"], "\n", datetime.fromtimestamp(data[name]["reminder_date"]).strftime("%d.%B.%Y %H:%M"))
+
+
+@note.command()
+def wait():
+    global now
+
+    while True:
+        data = get_data()
+        now = datetime.now()
+
+        for note_data in data.values():
+            reminder = datetime.fromtimestamp(note_data["reminder_date"])
+
+            if now.day == reminder.day and now.month == reminder.month and now.year == reminder.year and now.hour == reminder.hour and now.minute - 2 <= reminder.minute <= now.minute:
+                notify(name=note_data["name"], note=note_data["note"])
+        time.sleep(60)
 
 
 @calendar.command()
@@ -139,7 +165,7 @@ def week():
             flag_ = True
 
     if not flag_:
-        print("нет заметок, сделанных этой на недели")
+        print("нет заметок,сделанных на этой недели")
 
 
 if __name__ == '__main__':
