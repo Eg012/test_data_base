@@ -19,60 +19,61 @@
 # При аварии трансагентство возвращает заказчику двойную стоимость перевозки.
 # Процесс имитации может быть остановлен пользователем программы для просмотра параметров объектов:
 import random
+from typing import List
 
 
 class TransAgency:
-    def __init__(self, name_tran, unit_weight, unit_path, delivery_speed, deliv_price, bad_weather):
+    def __init__(self, name_tran, unit_weight, unit_path, delivery_speed, deliv_price, bad_weather, length, param1,
+                 param2):
         self.unit_weight = unit_weight  # единица веса
         self.unit_path = unit_path  # единица пути
         self.delivery_speed = delivery_speed  # скорость доставки
         self.deliv_price = deliv_price  # цена доставки
         self.bad_weather = bad_weather
         self.name_tran = name_tran
+        self.length = length
+        self.param1 = param1
+        self.param2 = param2
 
     def __int__(self):
         return int(self.unit_weight * self.unit_path * self.delivery_speed)
 
-    def is_work(self, weather=random.choice(["Солнечно", "дождливо", "ураган", "метель", "пыльные бури"])):
+    def is_work(self, weather):
         _flag = True
         if weather in self.bad_weather:
             _flag = False
+        return _flag
 
 
 class Air(TransAgency):
-    def __init__(self, name_tran: str, unit_path=1.34, unit_weight=1.67, delivery_speed=15,
+    def __init__(self, name_tran: str, length: int, unit_path=1.34, unit_weight=1.67, delivery_speed=15,
                  deliv_price=1.67 * 1.34 * 15):
         super().__init__(name_tran, unit_path, unit_weight, delivery_speed, deliv_price,
-                         ["ураган", "метель", "пыльные бури"])
+                         ["ураган", "метель", "пыльные бури"], length, param1= 123, param2=232)
 
     def __str__(self):
-        return f"способ доставки: {self.__class__.__name__}, скорость достовки:{self.delivery_speed},cтоимость доставки:{self.deliv_price}, что - то:{self.unit_weight * self.unit_path * self.delivery_speed}, погодные условия:{self.weather}"
+        return f"способ доставки: {self.__class__.__name__}, наценка:{self.param1 * self.param2} скорость достовки:{self.delivery_speed}, цена:{abs(int(self.unit_weight * self.unit_path * self.delivery_speed))}"
 
-    # @staticmethod
-    # def random():
-    #     pool = [
-    #         {
-    #             "nit_weight": "1.67",  # random.randint()
-    #             "unit_path = unit_path": "1.34",  # random.randint()
-    #             "delivery_speed": "15",  # random.randint()
-    #             "deliv_price": "10 000 руб",
-    #             "city": "Moscva: 15 000 000",
-    #             "weather": random.choice(["Солнечно", "дождливо", "ураган", "метель", "пыльные бури"])
-    #
-    #         }
-    #     ]
-    #     return TransAgency.random(Air, pool)
 
 
 class Auto(TransAgency):
-    def __init__(self, name_tran: str, unit_path: float = 1.2, unit_weight: float = 1.25, delivery_speed=8,
-                 deliv_price=1.2 * 1.25 * 8, ):
-        super().__init__(name_tran, unit_path, unit_weight, delivery_speed, deliv_price, ["ураган", "пыльные бури"])
+    def __init__(self, name_tran: str, length: int, unit_path=1.34, unit_weight=1.67, delivery_speed=15,
+                 deliv_price=1.67 * 1.34 * 15):
+        super().__init__(name_tran, unit_path, unit_weight, delivery_speed, deliv_price,
+                         ["ураган", "метель", "пыльные бури"], length, param1=123, param2=232)
+
+    def __str__(self):
+        return f"способ доставки: {self.__class__.__name__}, наценка:{self.param1 * self.param2} скорость достовки:{self.delivery_speed}, цена:{abs(int(self.unit_weight * self.unit_path * self.delivery_speed))}"
 
 
 class Train(TransAgency):
-    def __init__(self, name_tran: str, unit_path=1, unit_weight=2, delivery_speed=6, deliv_price=1 * 2 * 6):
-        super().__init__(name_tran, unit_path, unit_weight, delivery_speed, deliv_price, ["ураган", "пыльные бури"])
+    def __init__(self, name_tran: str, length: int, unit_path=1.34, unit_weight=1.67, delivery_speed=15,
+                 deliv_price=1.67 * 1.34 * 15):
+        super().__init__(name_tran, unit_path, unit_weight, delivery_speed, deliv_price,
+                         ["ураган", "метель", "пыльные бури"], length, param1=123, param2=232)
+
+    def __str__(self):
+        return f"способ доставки: {self.__class__.__name__}, наценка:{self.param1 * self.param2} скорость достовки:{self.delivery_speed}, цена:{abs(int(self.unit_weight * self.unit_path * self.delivery_speed))}"
 
 
 class Autopark:
@@ -81,18 +82,49 @@ class Autopark:
         self.auto = auto
         self.train = train
 
-    def calk(self, weight, distans, weather):
-        transport = [*self.air, * self.auto, * self.train]
+    def calc(self, weight, distans, weather):
+        global length
+        transport = [*self.air, *self.auto, *self.train]
         f_t = []
+        for t in transport:
+            if t.is_work(weather):
+                f_t.append(t)
+
+            if len(f_t) == 0:
+                print("погодные условия: <дождливо, ураган, метель, пыльные бури> не подходят")
+        _distanses: List[List[TransAgency]] = []
+        _distans: List[TransAgency] = []
+        for t in f_t:
+            _distans.append(t)
+            for t1 in f_t:
+                if t == t1:
+                    continue
+                _sum = 0
+                for d in _distans:
+                    _sum += d.length
+
+                if _sum < distans:
+                    _distans.append(t1)
+                else:
+                    break
+
+            _distanses.append(list(_distans))
+            _distans = []
+
+        for d in _distanses:
+            print('Variant:')
+            for i in d:
+                print("\t-", i)
+            print('------\n')
 
 
-
-
-Autopark(air=[
-    Air("Airbus A310"),
-    Air("Ан-225"), Air(" MD-11F ")],
+park = Autopark(air=[
+    Air("Airbus A310", length=500),
+    Air("Ан-225", length=300), Air(" MD-11F ", length=250)],
     auto=[
-        Auto("Fiat 500"), Auto("Ravon Matiz"), Auto("Hyundai Getz")],
+        Auto("Fiat 500", length=50), Auto("Ravon Matiz", length=78), Auto("Hyundai Getz", length=120)],
     train=[
-        Train("Ласточка"), Train("Сапсан"), Train("Наполеон")
+        Train("Ласточка", length=120), Train("Сапсан", length=250), Train("Кузьмв Минин", length=300)
     ])
+#######################################################################################################
+park.calc(200, 1000, random.choice(["Солнечно", "дождливо", ]))  # "ураган", "метель", "пыльные бури"
